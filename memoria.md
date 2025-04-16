@@ -1,4 +1,4 @@
-# Informe de Práctica: Clasificación de eventos de interés en entornos portuarios
+# Informe de Práctica 1: Clasificación de eventos de interés en entornos portuarios
 
 i.moure@udc.es
 
@@ -10,7 +10,8 @@ Esta práctica se enmarca en el contexto de plataformas inteligentes para la ges
 
 Para ello, disponemos de un conjunto de datos que incluye 294 imágenes tomadas en diferentes condiciones de luz y perspectiva, etiquetadas por la presencia de barcos o el hecho de si están atracados o no. A partir de estas imágenes, se propone el entrenamiento de modelos de clasificación binaria utilizando redes neuronales profundas, explorando diferentes configuraciones de entrenamiento, uso de modelos preentrenados, y técnicas de aumento de datos. Este informe presenta el enfoque seguido, los modelos desarrollados y los resultados obtenidos.
 
----
+<!-- SALTO DE PÁGINA -->
+<div style="page-break-after: always;"></div>
 
 ## Desarrollo de la Tarea 1: Implementación del Dataset
 
@@ -20,7 +21,20 @@ El diseño de la clase permite cargar las imágenes desde directorios estructura
 
 Desde una perspectiva crítica, este diseño modular resultó ser una buena decisión, ya que permitió replicar el mismo pipeline para ambas tareas de clasificación, cambiando únicamente el archivo de etiquetas.
 
----
+A continuación se muestra la distribución de clases de cada dataset.
+
+<div align="center">
+    <img src="ship_distribution.png" alt="ship_distribution" width="250"/>
+    <p> Figura 1: Distribución de clases en el dataset Ship (1: Hay barco, 0: No hay barco) </p>
+</div>
+
+<div align="center">
+    <img src="docked_distribution.png" alt="docked_distribution" width="250"/>
+    <p> Figura 2: Distribución de clases en el dataset Docked (1: Atracado, 0: No atracado) </p>
+</div>
+
+<!-- SALTO DE PÁGINA -->
+<div style="page-break-after: always;"></div>
 
 ## Desarrollo de la Tarea 2: Clasificación *Ship / No-ship*
 
@@ -35,7 +49,7 @@ Empleamos cuatro configuraciones de entrenamiento diferentes:
 
 El uso de *data augmentation* se diseñó cuidadosamente considerando las características del entorno portuario. Se aplicaron transformaciones como giros horizontales aleatorios, ajustes de brillo y contraste, y rotaciones leves, con el objetivo de simular las variaciones naturales de punto de vista, iluminación y condiciones atmosféricas que se encuentran en entornos reales.
 
-Los resultados obtenidos muestran de forma clara que el uso de modelos preentrenados proporciona una ventaja significativa, especialmente cuando se combinan con técnicas de *data augmentation*. El modelo preentrenado con *data augmentation* logró no solo una mayor precisión, sino también una mejor capacidad de generalización en el conjunto de validación, demostrando una menor pérdida y mayor estabilidad durante el entrenamiento.
+Los resultados obtenidos muestran de forma clara que el uso de modelos preentrenados proporciona una ventaja significativa, especialmente cuando se combinan con técnicas de *data augmentation*. El modelo preentrenado con *data augmentation* logró no solo una mayor accuracy, sino también una mejor capacidad de generalización en el conjunto de validación, demostrando una menor pérdida y mayor estabilidad durante el entrenamiento.
 
 ### Resultados de la clasificación *Ship / No-ship*
 
@@ -46,11 +60,26 @@ Los resultados obtenidos muestran de forma clara que el uso de modelos preentren
 | Preentrenado - Sin Augmentation      | 91.53        | 89.47          | 97.14       | 93.15          |
 | Preentrenado - Con Augmentation      | 91.53        | 87.50          | 100         | 93.33          |
 
----
+Lo que más nos llamó la atención es que el `recall` es siempre un poco más alto que el `precision`, indicando que los modelos aciertan todos o casi todos los ejemplos positivos pero etiquetan mal algunos negativos. Nuestra hipótesis es que esto se debe al ligero desbalanceo de clases, y que el modelo tiende a predecir positivo porque es la clase mayoritaria. A mayores también mostramos la curva precision-recall para todos los modelos, que nos puede ayudar a encontrar un umbral de clasificación distinto de 0.5 que equilibre más las métricas. A continuación se muestra una curva de ejemplo.
+
+<div align="center">
+    <img src="cpr.png" alt="cpr" width="300"/>
+    <p> Figura 3: Curva Precision-Recall para el modelo entrenado desde cero sin Data Augmentation en el dataset Ship </p>
+</div>
+
+En base a las necesidades de la aplicación, podíamos haber escogido otro umbral. En este caso consideramos que los falsos positivos son preferibles a los falsos negativos, así que decidimos dejar el umbral de 0.5.
+
+<!-- SALTO DE PÁGINA -->
+<div style="page-break-after: always;"></div>
 
 ## Desarrollo de la Tarea 4 (opcional): Clasificación *Docked / Undocked*
 
 También hemos realizado la tarea de clasificación para distinguir si el barco está atracado o no. Esta tarea presenta un nivel adicional de complejidad respecto a la detección de barcos, ya que las imágenes de una y otra clase pueden ser muy similares, cambiando solo por unos pocos píxeles.
+
+<div align="center">
+    <img src="barcos_pegados.png" alt="barcos_pegados" width="600"/>
+    <p> Figura 4: Ejemplo de 2 imágenes muy similares pero de clases opuestas </p>
+</div>
 
 Reutilizamos el pipeline diseñado para la Tarea 2, adaptándolo al nuevo conjunto de etiquetas (`docked.csv`). De nuevo, exploramos las mismas cuatro configuraciones (entrenamiento desde cero y *transfer learning*, con y sin *data augmentation*).
 
@@ -67,7 +96,8 @@ Los resultados obtenidos siguieron una tendencia similar: los modelos preentrena
 
 Los resultados obtenidos son visiblemente inferiores a los de la Tarea 2, lo cual no es sorprendente, porque ya sabíamos que este problema es más difícil que el anterior.
 
----
+<!-- SALTO DE PÁGINA -->
+<div style="page-break-after: always;"></div>
 
 ## Experimentos y mejoras
 
@@ -79,7 +109,12 @@ Al leer el dataset decidimos reescalar las imágenes a 144x256, preservando el r
 
 ### Entrenamiento y ajuste de hiperparámetros
 
-Decidimos añadir parada temprana al bucle de entrenamiento para no tener que encontrar a mano el número óptimo de epochs. Al principio establecimos una paciencia de 3, pero vimos que los modelos en ambos datasets estaban entrenando demasiado poco (en concreto, los modelos desde cero en `docked` predecían siempre la misma clase). Subimos la paciencia a 5, luego a 7, y terminamos en 11. Al principio este valor nos parecía alto, pero había numerosas ocasiones donde el loss bajaba repentinamente después de una mala racha. 11 epochs es un margen tan amplio que solo se interrumpe el entrenamiento cuando el overfitting es bastante evidente. Decidimos devolver el modelo con los mejores pesos (respecto al loss de validación) porque normalmente el último modelo ya se ha sobreajustado bastante.
+Decidimos añadir parada temprana al bucle de entrenamiento para no tener que encontrar a mano el número óptimo de epochs. Al principio establecimos una paciencia de 3, pero vimos que los modelos en ambos datasets estaban entrenando demasiado poco (en concreto, los modelos desde cero en `docked` predecían siempre la misma clase). Subimos la paciencia a 5, luego a 7, y terminamos en 11. Al principio este valor nos parecía alto, pero había numerosas ocasiones donde el *loss* bajaba repentinamente después de una mala racha. 11 epochs es un margen tan amplio que solo se interrumpe el entrenamiento cuando el overfitting es bastante evidente. Decidimos devolver el modelo con los mejores pesos (respecto al loss de validación) porque normalmente el último modelo ya se ha sobreajustado demasiado. En la siguiente imagen podemos ver que si la paciencia fuese demasiado baja, el modelo habría parado alrededor de la epoch 60; sin embargo, con paciencia de 11 el modelo tarda más en "rendirse" y termina con un resultado mejor.
+
+<div align="center">
+    <img src="training_example.png" alt="training_example" width="350"/>
+    <p> Figura 5: Desarrollo del loss a lo largo del entrenamiento del modelo desde cero con DA en Ship </p>
+</div>
 
 En cuanto al *learning rate*, empezamos con 1e-3 para los modelos entrenados desde cero y 1e-4 para los preentrenados. El modelo desde cero sin DA en `ship` tiene probablemente el problema más simple, y por ende es el que converge más fácilmente y sigue teniendo 1e-3. Para el resto de modelos experimentamos con distintos valores, y finalmente nos decantamos por 1e-4. Un valor más alto no permitía converger y uno más bajo tardaba demasiado en hallar un mínimo.
 
@@ -87,7 +122,7 @@ Todos los modelos emplearon el mismo *batch size* de 64 por motivos similares a 
 
 ### Posibles mejoras futuras
 
-En el problema de `ship` tenemos un poco de desbalanceo de clases, con aproximadamente 2 fotos con barco por cada foto sin barco. Podríamos haber ponderado las instancias en entrenamiento o haber aplicado over/undersampling, pero es un desbalanceo bastante ligero y no parece que los modelos tengan dificultades evitándolo.
+En el problema de `ship` observamos un leve desbalanceo de clases, con aproximadamente 2 fotos con barco por cada foto sin barco. Podríamos haber ponderado las instancias en entrenamiento o haber aplicado over/undersampling, pero es un desbalanceo bastante ligero y no parece que afecte demasiado al rendimiento de los modelos.
 
 En nuestro sistema de parada temprana podríamos haber realizado algún tipo de comprobación para decidir si devolver el último modelo o el mejor. Si el mejor tiene 0.35 de loss y el último 2.1 la decisión es clara, pero si el mejor tiene 0.3521 y el último 0.3547 puede que el segundo haya "aprendido" más a pesar de tener un loss peor.
 
@@ -95,7 +130,8 @@ También pensamos en dividir las imágenes en ejemplos "claros" y "difíciles" m
 
 Otras opción sería emplear arquitecturas más potentes que SqueezeNet 1.0, como VGG16, AlexNet o una ResNET. Esto podría mejorar los resultados (creemos que por un margen muy pequeño) pero resultaría en un entrenamiento más lento y un modelo más grande. Nuestros modelos tienen 1.2m de parámetros y ocupan 4.83MB cada uno, mientras que una instancia de VGG16 tiene 138 millones de parámetros y ocupa 528MB. Consideramos que un modelo más pequeño sería más adecuado para ejecutar en local en la realidad, porque es poco probable que un puerto tenga la infraestructura de IA requerida para ejecutar modelos gigantes en tiempo real (o con una frecuencia aceptable).
 
----
+<!-- SALTO DE PÁGINA -->
+<div style="page-break-after: always;"></div>
 
 ## Conclusiones
 
