@@ -1,8 +1,9 @@
 # Informe de Práctica 1: Clasificación de eventos de interés en entornos portuarios
 
-i.moure@udc.es
-
-pablo.hernandez.martinez@udc.es
+| Correo | Nombre |
+|----------|-------|
+| i.moure@udc.es | Iván Moure Pérez |
+| pablo.hernandez.martinez@udc.es | Pablo Hernández Martínez |
 
 ## Introducción
 
