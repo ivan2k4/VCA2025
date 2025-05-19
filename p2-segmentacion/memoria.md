@@ -7,10 +7,7 @@
 
 ## Introducción
 
-blablablablablablabla
-
-<!-- SALTO DE PÁGINA -->
-<div style="page-break-after: always;"></div>
+En esta práctica hemos desarrollado una serie de modelos para la segmentación semántica de imágenes de tomografía de coherencia óptica (OCT) utilizando la arquitectura *UNet*. El objetivo es identificar y segmentar regiones de fluido patológico en las imágenes, lo que es útil para el diagnóstico y seguimiento de enfermedades oculares.
 
 ## Desarrollo
 
@@ -80,40 +77,53 @@ Durante el entrenamiento, nos dimos cuenta de que la tasa de aprendizaje inicial
 | Loss            | Epochs | LR inicial | ¿LR Decay? | ¿Data Augmentation? | Umbral |
 |-----------------|--------|------------|------------|---------------------|--------|
 | BCE (baseline)  | 75     | 1e-4       | No         | No                  | 0.9    |
-| BCE             | 100    | 1e-4       | Si         | Si                  | 0.95   |
-| BCE + Dice      | 90     | 1e-4       | Si         | No                  | 0.9    |
+| BCE             | 90     | 1e-4       | Si         | Si                  | 0.9    |
+| BCE + Dice      | 90     | 1e-4       | Si         | No                  | 0.8    |
 | Jaccard         | 90     | 1e-4       | Si         | No                  | 0.4    |
-| BCE + Hausdorff | 120    | 1e-4       | No         | No                  | 0.95   |
+| BCE + Hausdorff | 90     | 1e-4       | No         | No                  | 0.95   |
 
-Para escoger el mejor umbral, buscamos el valor de *IoU* más alto en la tabla de resultados, que además equilibre *precision* y *recall* en la medida de lo posible. Para esta tarea concreta (OCT) creemos que *IoU* es la métrica más relevante porque el objetivo es encontrar exactamente las regiones de fluido patológico, y el desbalanceo entre clases hace que *precision* y *recall* no sean las métricas más adecuadas.
+Para escoger el mejor umbral, buscamos el valor de *IoU* más alto en la tabla de resultados y en la gráfica (figura 3), que además equilibre *precision* y *recall* en la medida de lo posible. Para esta tarea concreta (OCT) creemos que *IoU* es la métrica más relevante porque el objetivo es encontrar exactamente las regiones de fluido patológico, y el desbalanceo entre clases hace que *precision* y *recall* no sean las métricas más adecuadas.
+
+<div align="center">
+    <img src="images/thresholds.png" alt="thresholds" width="450"/>
+    <p> Figura 3: Métricas de un modelo con diferentes umbrales </p>
+</div>
+
+<!-- SALTO DE PÁGINA -->
+<div style="page-break-after: always;"></div>
 
 ## Resultados
 
 A continuación mostramos los resultados obtenidos con los diferentes modelos entrenados. En la tabla se muestran las métricas de *accuracy*, *precision*, *recall*, *IoU/Jaccard* y *F1/Dice* para cada umbral óptimo.
 
-| Modelo        | Threshold | IoU    | Dice   | Precision | Recall | Accuracy |
-|---------------|-----------|--------|--------|-----------|--------|----------|
-| baseline      | 0.9       | 0.6306 | 0.7734 | 0.7683    | 0.7787 | 0.9923   |
-| DataAug       | 0.95      |        |        |           |        |          |
-| BCE+Dice      | 0.9       |        |        |           |        |          |
-| Jaccard       | 0.4       |        |        |           |        |          |
-| BCE+Hausdorff | 0.95      |        |        |           |        |          |
+| Modelo        | IoU        | Dice       | Precision  | Recall     | Accuracy   |
+|-------------- |----------- |----------- |----------- |----------- |----------- |
+| baseline      | 0.4608     | 0.6309     | 0.5355     | **0.7676** | 0.9916     |
+| DataAug       | **0.4859** | **0.6540** | 0.5768     | 0.7551     | 0.9925     |
+| BCE+Dice      | 0.4471     | 0.6179     | 0.56       | 0.6893     | 0.9920     |
+| Jaccard       | 0.4310     | 0.6024     | **0.7210** | 0.5173     | **0.9936** |
+| BCE+Hausdorff | 0.3845     | 0.5554     | 0.5288     | 0.5848     | 0.9913     |
 
+Si nos basamos en *IoU* y *Dice*, el modelo que mejor rinde es el que emplea *Data Augmentation*, y el segundo es el *baseline*. Tiene sentido que el *Data Augmentation* ayude al modelo a generalizar. En el *dataset* hay imágenes que se han tomado con distintos dispositivos y a distintas resoluciones, y simular transformaciones similares le permite rendir mejor en test.
 
-
-
-
+A lo largo de nuestras pruebas observamos resultados muy variados, porque las 5 imágenes que se eligen para test pueden influir significativamente en la evaluación de los modelos. En alguna ocasión afortunada llegamos a tener 0.65-0.75 de *IoU* en varios modelos, pero no creemos que evaluar con las instancias fáciles sea representativo. Los valores actuales representan bastante bien el rendimiento promedio, aunque el modelo de *Jaccard* suele obtener resultados mejores.
 
 <!-- SALTO DE PÁGINA -->
 <div style="page-break-after: always;"></div>
+
+## Mejoras posibles
+
+En primer lugar, creemos que sería útil evaluar los modelos haciendo 5 o 10-*fold Cross Validation*, dada la reducida cantidad de imágenes del *dataset*. Además aliviaría el impacto de escoger un conjunto de test fácil o difícil. También hemos de tener en cuenta que esto ralentizaría bastante el desarrollo.
+
+Por otro lado, podríamos intentar generar imágenes sintéticas para contribuir al entrenamiento, aunque esto requeriría un modelo *Autoencoder* bien entrenado, y probablemente un profesional que verificase la validez de las nuevas imágenes ficticias.
+
+A mayores podríamos intentar retocar la arquitectura de *UNet*, cambiar de modelo o buscar una red preentrenada en una tarea de semgentación semántica aplicada a medicina similar (como *DUCK-Net*, desarrollada en Dumitru R. 2023). Aplicar *transfer learning* en esta tarea podría darnos resultados muy interesantes, aunque podría conllevar un tiempo considerable de entrenamiento y gastaría más recursos computacionales.
 
 ## Conclusiones
 
-blablabla
-
-<!-- SALTO DE PÁGINA -->
-<div style="page-break-after: always;"></div>
+En conclusión, hemos conseguido entrenar un modelo de segmentación semántica para imágenes de OCT con resultados bastante satisfactorios. A pesar de la escasez de datos anotados, logramos mejorar el rendimiento del modelo base mediante técnicas como *Data Augmentation* y la ponderación de clases. Además, exploramos diferentes funciones de *loss* y ajustamos hiperparámetros para optimizar el proceso de entrenamiento.
 
 ## Referencias
 
 * Azad, R., Heidary, M., Yilmaz, K., Hüttemann, M., Karimijafarbigloo, S., Wu, Y., ... & Merhof, D. (2023). Loss functions in the era of semantic segmentation: A survey and outlook. arXiv preprint arXiv:2312.05391.
+* Dumitru, R. G., Peteleaza, D., & Craciun, C. (2023). Using DUCK-Net for polyp image segmentation. Scientific reports, 13(1), 9803.
